@@ -4,8 +4,8 @@ plugins {
     id("maven-publish")
 }
 
-group = providers.gradleProperty("GROUP").get()
-version = providers.gradleProperty("VERSION_NAME").get()
+group = providers.gradleProperty("GROUP").orElse("ng.nviti").get()
+version = providers.gradleProperty("VERSION_NAME").orElse("0.1.0").get()
 
 android {
     namespace = "ng.nviti.chat"
