@@ -18,6 +18,7 @@ public class NvitiChatView @SuppressLint("SetJavaScriptEnabled") constructor(
     public val config: NvitiChatConfig,
     private val actionHandler: NvitiNativeActionHandler,
     private val mediaPermissionHandler: NvitiMediaPermissionHandler? = null,
+    private val onExternalNavigation: ((Uri) -> Unit)? = null,
 ) : WebView(context) {
     private val exactOrigin = "${config.allowedOrigin.scheme}://${config.allowedOrigin.authority}"
 
@@ -34,6 +35,10 @@ public class NvitiChatView @SuppressLint("SetJavaScriptEnabled") constructor(
         installBridge()
         installNavigationGuard()
         installPermissionGuard()
+        setDownloadListener { url, _, _, _, _ ->
+            val uri = Uri.parse(url)
+            if (uri.scheme == "https") onExternalNavigation?.invoke(uri)
+        }
         loadUrl(config.launchUrl.toString())
     }
 
@@ -51,8 +56,11 @@ public class NvitiChatView @SuppressLint("SetJavaScriptEnabled") constructor(
 
     private fun installNavigationGuard() {
         webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
-                !request.url.sameOriginAs(config.allowedOrigin)
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                if (request.url.sameOriginAs(config.allowedOrigin)) return false
+                if (request.isForMainFrame && request.url.scheme == "https") onExternalNavigation?.invoke(request.url)
+                return true
+            }
         }
     }
 
