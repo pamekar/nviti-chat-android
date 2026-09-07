@@ -1,37 +1,57 @@
-# Nviti Chat Android SDK
+# Nviti Chat android SDK
 
-Embed the complete Nviti conversation experience in an Android application without rebuilding messages, forms, bookings, media, menus, human handoff, or realtime delivery.
+Embed the shared Nviti conversation engine: messages, configured forms, menus,
+bookings and human handoff. Apache-2.0 licensed.
 
-## Requirements
+## Source installation
 
-- Android API 24+
-- Android System WebView with secure web-message support
-- A `webview_launch_url` issued by your backend through Nviti's signed-session API
+Requirements: JDK 17, Android SDK 35, minimum Android API 24, and a current Android
+System WebView. Maven Central publication is not yet available.
 
-## Install
-
-Until the first Maven Central release, include this repository as a Gradle composite or source dependency. The package publishes the Maven coordinate `ng.nviti:nviti-chat:0.1.0`.
-
-```kotlin
-implementation("ng.nviti:nviti-chat:0.1.0")
+For a complete runnable integration, keep these sibling checkouts:
+```sh
+mkdir -p demo_apps sdks
+git clone https://github.com/pamekar/nviti-chat-android.git sdks/nviti-chat-android
+git clone https://github.com/pamekar/nviti-demo-app-android.git demo_apps/nviti-demo-app-android
+cd demo_apps/nviti-demo-app-android
+./gradlew testDebugUnitTest assembleDebug
 ```
 
-## Use
+In your own Gradle app, include the SDK's `library` directory as a project
+dependency (matching compatible Android/Kotlin plugin versions):
+```kotlin
+// settings.gradle.kts; adjust the relative path to your checkout
+include(":nviti-chat")
+project(":nviti-chat").projectDir = file("../nviti-chat-android/library")
+// app/build.gradle.kts
+dependencies { implementation(project(":nviti-chat")) }
+```
 
+## Close-only integration
+
+Inside an Activity, with `launchUrl` issued by your backend:
 ```kotlin
 val chat = NvitiChatView(
     context = this,
     config = NvitiChatConfig(
-        launchUrl = Uri.parse(session.webviewLaunchUrl),
-        allowedOrigin = Uri.parse("https://banking-mobile.nvt.ng"),
-        allowedActions = setOf(NvitiNativeAction.LOCATION, NvitiNativeAction.CLOSE),
+        launchUrl = Uri.parse(launchUrl),
+        allowedOrigin = Uri.parse("https://YOUR_TENANT.nvt.ng"),
+        allowedActions = setOf(NvitiNativeAction.CLOSE),
     ),
-    actionHandler = NvitiNativeActionHandler { action, payload, respond ->
-        respond(Result.success(JSONObject()))
+    actionHandler = NvitiNativeActionHandler { action, _, respond ->
+        if (action == NvitiNativeAction.CLOSE) {
+            respond(Result.success(JSONObject()))
+            finish()
+        } else respond(Result.failure(IllegalArgumentException("Unsupported action")))
     },
 )
 ```
 
-Generate signed sessions on your backend. Never put an Nviti API credential in an Android application. The SDK rejects cleartext launch URLs, cross-origin navigation, mixed content, unsupported bridge messages and actions that the host has not explicitly allowed.
+Import `android.net.Uri`, `org.json.JSONObject` and `ng.nviti.chat.*`.
+Add the view to your layout, provide a native Close button, and destroy it from
+the Activity lifecycle. See the [complete demo](https://github.com/pamekar/nviti-demo-app-android).
 
-See the bank demo repository for lifecycle, runtime permission and file-picker integration.
+## Integration guide
+
+Read [secure sessions, lifecycle, native permissions, feature boundaries and troubleshooting](docs/integration.md).
+Never embed a server API credential or trust a client-entered phone number as identity.
