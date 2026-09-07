@@ -11,7 +11,7 @@ System WebView. Maven Central publication is not yet available.
 For a complete runnable integration, keep these sibling checkouts:
 ```sh
 mkdir -p demo_apps sdks
-git clone https://github.com/pamekar/nviti-chat-android.git sdks/nviti-chat-android
+git clone --branch v0.1.0 https://github.com/pamekar/nviti-chat-android.git sdks/nviti-chat-android
 git clone https://github.com/pamekar/nviti-demo-app-android.git demo_apps/nviti-demo-app-android
 cd demo_apps/nviti-demo-app-android
 ./gradlew testDebugUnitTest assembleDebug
